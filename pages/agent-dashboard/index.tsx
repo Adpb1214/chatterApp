@@ -1,6 +1,8 @@
+// pages/agent-dashboard.tsx
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/Supabase";
 import {
   Box,
@@ -10,7 +12,7 @@ import {
   ListItemText,
   TextField,
   Button,
-  Divider,
+
   ListItemButton,
 } from "@mui/material";
 import { useSession } from "@/hooks/useSession";
@@ -39,7 +41,8 @@ const AgentDashboard = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
 
-  // ✅ Fetch all users who are NOT agents
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const fetchUsers = async () => {
       const { data, error } = await supabase
@@ -54,7 +57,6 @@ const AgentDashboard = () => {
     fetchUsers();
   }, []);
 
-  // ✅ Fetch all agent IDs
   useEffect(() => {
     const fetchAgents = async () => {
       const { data, error } = await supabase
@@ -72,25 +74,22 @@ const AgentDashboard = () => {
     fetchAgents();
   }, []);
 
-  // ✅ Fetch messages by selected user ID
   useEffect(() => {
     if (!selectedUser) return;
-  
-    // Fetch initial messages
+
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from("messages")
         .select("*")
         .eq("user_id", selectedUser.id)
         .order("created_at", { ascending: true });
-  
+
       if (data) setMessages(data);
       if (error) console.error("Error fetching messages:", error);
     };
-  
+
     fetchMessages();
-  
-    // Subscribe to new messages in real-time
+
     const channel = supabase
       .channel(`messages:user:${selectedUser.id}`)
       .on(
@@ -107,21 +106,22 @@ const AgentDashboard = () => {
         }
       )
       .subscribe();
-  
-    // Cleanup on unmount or user change
+
     return () => {
       supabase.removeChannel(channel);
     };
   }, [selectedUser]);
-  
 
-  // ✅ Send new message
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedUser || !agentId) return;
 
     const content = newMessage.trim();
 
-    const { data, error } = await supabase.from("messages").insert([
+    const { error } = await supabase.from("messages").insert([
       {
         user_id: selectedUser.id,
         sender_id: agentId,
@@ -129,93 +129,98 @@ const AgentDashboard = () => {
       },
     ]);
 
-    if (!error && data) {
-      setMessages((prev) => [...prev, data[0]]);
+    if (!error) {
       setNewMessage("");
     } else {
       console.error("Failed to send message:", error);
     }
   };
 
-  // ✅ Helper to check if message is from any agent
   const isAgentMessage = (senderId: string) => {
     return agentIds.includes(senderId);
   };
 
   return (
-    <Box display="flex" height="100vh">
-      {/* Sidebar - user list */}
-      <Box width="300px" borderRight="1px solid #ccc" p={2}>
+    <Box display="flex" height="100vh" overflow="hidden">
+      {/* Sidebar - Fixed User List */}
+      <Box
+        width="300px"
+        borderRight="1px solid #ccc"
+        p={2}
+        overflow="auto"
+      >
         <Typography variant="h6">Users</Typography>
         <List>
           {users.map((user) => (
-          <ListItem key={user.id} disablePadding>
-          <ListItemButton
-            selected={selectedUser?.id === user.id}
-            onClick={() => setSelectedUser(user)}
-          >
-            <ListItemText primary={user.email} />
-          </ListItemButton>
-        </ListItem>
+            <ListItem key={user.id} disablePadding>
+              <ListItemButton
+                selected={selectedUser?.id === user.id}
+                onClick={() => setSelectedUser(user)}
+              >
+                <ListItemText primary={user.email} />
+              </ListItemButton>
+            </ListItem>
           ))}
         </List>
       </Box>
 
       {/* Chat Window */}
-   
-<Box flex={1} display="flex" flexDirection="column" p={2}>
-  <Typography variant="h6">
-    Chat with {selectedUser?.email || "..."}
-  </Typography>
-  <Divider sx={{ my: 2 }} />
+      <Box flex={1} display="flex" flexDirection="column" height="100%">
+        {/* Header */}
+        <Box p={2} borderBottom="1px solid #ccc">
+          <Typography variant="h6">
+            Chat with {selectedUser?.email || "..."}
+          </Typography>
+        </Box>
 
-  {/* Chat Messages */}
-  <Box
-    flex={1}
-    overflow="auto"
-    display="flex"
-    flexDirection="column"
-    gap={1}
-    mb={2}
-  >
-    {messages.length === 0 ? (
-      <Typography color="text.secondary">No messages</Typography>
-    ) : (
-      messages.map((msg) => {
-        const isAgent = isAgentMessage(msg.sender_id);
-        return (
-          <Box
-            key={msg.id}
-            alignSelf={isAgent ? "flex-end" : "flex-start"}
-            sx={{
-              backgroundColor: isAgent ? "#e3f2fd" : "#f3e5f5",
-              px: 2,
-              py: 1,
-              borderRadius: 2,
-              maxWidth: "75%",
-            }}
-          >
-            <Typography>{msg.content}</Typography>
-          </Box>
-        );
-      })
-    )}
-  </Box>
+        {/* Message List */}
+        <Box
+          flex={1}
+          overflow="auto"
+          display="flex"
+          flexDirection="column"
+          px={2}
+          py={1}
+        >
+          {messages.length === 0 ? (
+            <Typography color="text.secondary">No messages</Typography>
+          ) : (
+            messages.map((msg) => {
+              const isAgent = isAgentMessage(msg.sender_id);
+              return (
+                <Box
+                  key={msg.id}
+                  alignSelf={isAgent ? "flex-end" : "flex-start"}
+                  sx={{
+                    backgroundColor: isAgent ? "#e3f2fd" : "#f3e5f5",
+                    px: 2,
+                    py: 1,
+                    borderRadius: 2,
+                    maxWidth: "75%",
+                    mb: 1,
+                  }}
+                >
+                  <Typography>{msg.content}</Typography>
+                </Box>
+              );
+            })
+          )}
+          <div ref={messageEndRef} />
+        </Box>
 
-  {/* Input Field */}
-  <Box display="flex" gap={1}>
-    <TextField
-      fullWidth
-      placeholder="Type a message"
-      value={newMessage}
-      onChange={(e) => setNewMessage(e.target.value)}
-    />
-    <Button variant="contained" onClick={handleSendMessage}>
-      Send
-    </Button>
-  </Box>
-</Box>
-
+        {/* Input Area */}
+        <Box display="flex" gap={1} p={2} borderTop="1px solid #ccc">
+          <TextField
+            fullWidth
+            placeholder="Type a message"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+          />
+          <Button variant="contained" onClick={handleSendMessage}>
+            Send
+          </Button>
+        </Box>
+      </Box>
     </Box>
   );
 };

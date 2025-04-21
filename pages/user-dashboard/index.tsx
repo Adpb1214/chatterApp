@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/Supabase";
 import { useSession } from "@/hooks/useSession";
 import {
@@ -8,7 +8,8 @@ import {
   Typography,
   TextField,
   Button,
-  Divider,
+  Avatar,
+  CircularProgress,
 } from "@mui/material";
 
 interface Message {
@@ -22,11 +23,14 @@ interface Message {
 const UserDashboard = () => {
   const { session } = useSession();
   const userId = session?.user?.id ?? "";
+//   const adminEmail = session?.user?.email ?? "admin@example.com"; // Assuming admin's email is available
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isTyping, setIsTyping] = useState(false); // For "typing..." animation
+  const messageEndRef = useRef<HTMLDivElement | null>(null);
 
-  // ✅ Fetch messages for the logged-in user's thread
+  // ✅ Fetch messages
   useEffect(() => {
     if (!userId) return;
 
@@ -42,9 +46,36 @@ const UserDashboard = () => {
     };
 
     fetchMessages();
+
+    // ✅ Real-time subscription
+    const channel = supabase
+      .channel(`messages:user:${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as Message;
+          setMessages((prev) => [...prev, newMsg]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [userId]);
 
-  // ✅ Send a message
+  // ✅ Scroll to bottom on new message
+  useEffect(() => {
+    messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // ✅ Send message
   const handleSendMessage = async () => {
     const content = newMessage.trim();
     if (!content || !userId) return;
@@ -58,59 +89,104 @@ const UserDashboard = () => {
     ]);
 
     if (!error) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(), // local-only ID for now
-          sender_id: userId,
-          user_id: userId,
-          content,
-          created_at: new Date().toISOString(),
-        },
-      ]);
       setNewMessage("");
+
+      // Simulate chatbot reply after a short delay
+      setIsTyping(true);
+      setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            sender_id: "chatbot", // Chatbot sender ID (use a different ID)
+            user_id: userId,
+            content: "Hi there! How can I assist you today?",
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      }, 1500); // Simulating "typing..." for 1.5 seconds
     } else {
       console.error("Failed to send message:", error);
     }
   };
 
-  return (
-    <Box display="flex" flexDirection="column" height="100vh" p={2}>
-      <Typography variant="h6" gutterBottom>
-        Chat with Support Agent
-      </Typography>
-      <Divider sx={{ mb: 2 }} />
+  // Get the initials of the admin's email (e.g., "jd" from "john.doe@example.com")
+//   const getAdminInitials = (email: string) => {
+//     const nameParts = email.split("@")[0].split(".");
+//     return nameParts.length > 1
+//       ? nameParts[0][0] + nameParts[1][0]
+//       : nameParts[0][0];
+//   };
 
-      {/* Messages Display */}
-      <Box flex={1} overflow="auto" mb={2}>
-        {messages.length === 0 ? (
-          <Typography color="text.secondary">No messages</Typography>
-        ) : (
-          messages.map((msg) => (
-            <Typography
-              key={msg.id}
-              align={msg.sender_id === userId ? "right" : "left"}
-              sx={{
-                mb: 1,
-                backgroundColor:
-                  msg.sender_id === userId ? "#e3f2fd" : "#f3e5f5",
-                p: 1,
-                borderRadius: 2,
-                display: "inline-block",
-                maxWidth: "75%",
-              }}
-            >
-              {msg.content}
-            </Typography>
-          ))
-        )}
+  return (
+    <Box display="flex" flexDirection="column" height="100vh">
+      {/* Header */}
+      <Box p={2} borderBottom="1px solid #ccc">
+        <Typography variant="h6">Talk to us, we are listening 👂</Typography>
       </Box>
 
-      {/* Message Input */}
-      <Box display="flex" gap={1}>
+      {/* Messages */}
+      <Box
+        flex={1}
+        overflow="auto"
+        display="flex"
+        flexDirection="column"
+        px={2}
+        py={1}
+      >
+        {messages.length === 0 ? (
+          <Typography color="text.secondary">We are just a message away 💬</Typography>
+        ) : (
+          messages.map((msg) => {
+            const isUser = msg.sender_id === userId;
+            const isBot = msg.sender_id === "chatbot";
+            return (
+              <Box
+                key={msg.id}
+                alignSelf={isUser ? "flex-end" : "flex-start"}
+                sx={{
+                  backgroundColor: isUser ? "#e3f2fd" : isBot ? "#f3e5f5" : "#e8f5e9",
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  maxWidth: "75%",
+                  mb: 1,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                {isBot && (
+                  <Avatar
+                    sx={{ width: 30, height: 30, mr: 1 }}
+                    alt="Dil Se Listener"
+                    src="/bot-avatar.png" 
+                  />
+                )}
+                <Typography>
+                  {isBot
+                    ? `${msg.content}`
+                    : isUser
+                    ? msg.content
+                    : `${msg.content}`}
+                </Typography>
+                {isTyping && isBot && (
+                  <Box sx={{ ml: 2 }}>
+                    <CircularProgress size={20} color="secondary" />
+                  </Box>
+                )}
+              </Box>
+            );
+          })
+        )}
+        <div ref={messageEndRef} />
+      </Box>
+
+      {/* Input */}
+      <Box display="flex" gap={1} p={2} borderTop="1px solid #ccc">
         <TextField
           fullWidth
-          placeholder="Type your message..."
+          placeholder="Type a message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
         />
