@@ -4,7 +4,7 @@ import { createClient} from "@supabase/supabase-js";
 // Replace these with your Supabase URL and Key
 const supabase = createClient(
   "https://wyleespbgsicnxcnpknp.supabase.co",
-  "your-public-anon-key"
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5bGVlc3BiZ3NpY254Y25wa25wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyMDk4ODYsImV4cCI6MjA2MDc4NTg4Nn0.-w7Xux2kv7mNs4xL2DC8jeRPVAecUI1MArqReX88YdA"
 );
 
 interface Message {
