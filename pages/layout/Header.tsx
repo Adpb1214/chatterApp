@@ -5,7 +5,7 @@ import { Box, Typography, Button } from "@mui/material";
 import { Message } from "@mui/icons-material";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/Supabase";
-import { showCustomToast } from "../toast/customToast";
+import  showCustomToast from "../toast/customToast";
 
 const Header = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);

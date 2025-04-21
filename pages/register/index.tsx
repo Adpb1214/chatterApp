@@ -11,7 +11,7 @@ import {
 import { supabase } from "@/lib/Supabase";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 
-import { showCustomToast } from "../toast/customToast";
+import showCustomToast  from "../toast/customToast";
 import { useRouter } from "next/navigation";
 // import { useRouter } from "next/router";
 

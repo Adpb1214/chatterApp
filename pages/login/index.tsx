@@ -3,7 +3,7 @@ import { useState } from "react";
 import {  Button, Paper, TextField, Typography } from "@mui/material";
 import { supabase } from "@/lib/Supabase";
 import { useRouter } from "next/router";
-import { showCustomToast } from "../toast/customToast";
+import  showCustomToast  from "../toast/customToast";
 
 const Login = () => {
   const [email, setEmail] = useState("");

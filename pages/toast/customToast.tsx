@@ -3,7 +3,7 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ChatBubbleIcon from "@mui/icons-material/ChatBubbleOutline";
 import { Box, Typography } from "@mui/material";
 
-export const showCustomToast = (message: string) => {
+const showCustomToast = (message: string) => {
   toast.custom((t) => (
     <Box
       display="flex"
@@ -27,3 +27,4 @@ export const showCustomToast = (message: string) => {
     </Box>
   ));
 };
+export default showCustomToast;
