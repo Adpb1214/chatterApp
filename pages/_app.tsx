@@ -2,7 +2,7 @@
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import "../styles/globals.css";
 import type { AppProps } from "next/app";
-import Header from "./layout/Header";
+// import Header from "./layout/Header";
 import { Container, CssBaseline } from "@mui/material";
 import Footer from "./layout/Footer";
 import { Toaster } from "react-hot-toast";
@@ -20,7 +20,7 @@ function MyApp({ Component, pageProps }: AppProps) {
        <CssBaseline />
 
 
-<Header />
+{/* <Header /> */}
 
 
 <Container
