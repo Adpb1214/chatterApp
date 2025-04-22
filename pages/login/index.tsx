@@ -3,7 +3,7 @@ import { useState } from "react";
 import {  Button, Paper, TextField, Typography } from "@mui/material";
 import { supabase } from "@/lib/Supabase";
 import { useRouter } from "next/router";
-import  showCustomToast  from "../toast/customToast";
+// import  showCustomToast  from "../toast/customToast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -17,12 +17,12 @@ const Login = () => {
     });
 
     if (error) {
-        showCustomToast(error.message)
+        // showCustomToast(error.message)
       console.error("Login error:", error.message);
     } else {
       // If login is successful, check the user's role
       const userRole = data.user?.user_metadata?.role;
-      showCustomToast("Welcome Back!")
+      // showCustomToast("Welcome Back!")
       console.log(userRole,data)
       if (userRole === "agent") {
         router.push("/agent-dashboard"); // Redirect to Agent Dashboard

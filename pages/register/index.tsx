@@ -11,7 +11,7 @@ import {
 import { supabase } from "@/lib/Supabase";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
 
-import showCustomToast  from "../toast/customToast";
+// import showCustomToast  from "../toast/customToast";
 import { useRouter } from "next/navigation";
 // import { useRouter } from "next/router";
 
@@ -33,7 +33,7 @@ const Register = () => {
     if (error) {
       console.error(error.message);
     } else {
-      showCustomToast("Account created! Let's start chatting!");
+      // showCustomToast("Account created! Let's start chatting!");
       router.push("/login");
       console.log("Signup success:", data);
       // Optionally redirect to chat page
